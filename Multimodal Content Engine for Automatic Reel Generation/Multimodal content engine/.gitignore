@@ -1,0 +1,14 @@
+# Never commit these
+.env
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.mp3
+*.wav
+output/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

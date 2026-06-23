@@ -1,0 +1,164 @@
+"""
+============================================================
+ STEP 6 — Generate a Full Markdown Report of All 5 Reels
+============================================================
+ Tool   : Pure Python (no API needed)
+ Cost   : FREE
+ Input  : output/reels_content.json
+ Output : output/reports/reels_report.md
+============================================================
+"""
+
+import os
+import json
+import sys
+from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def load_reels_content(path: str = "output/reels_content.json") -> list:
+    """Load the generated content from step 3."""
+    if not os.path.exists(path):
+        print(f"[ERROR] Content file not found: {path}")
+        print("        Run step3_generate_content.py first!")
+        sys.exit(1)
+
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def build_report(reels: list) -> str:
+    """Build the full markdown report string."""
+
+    now = datetime.now().strftime("%B %d, %Y at %H:%M")
+    video_file = os.getenv("VIDEO_FILE", "my_video.mp4")
+
+    lines = []
+    lines.append("# 🎬 Multimodal Content Engine — Reels Report")
+    lines.append(f"\n**Generated:** {now}")
+    lines.append(f"**Source Video:** `{video_file}`")
+    lines.append(f"**Total Reels:** {len(reels)}")
+    lines.append("\n---\n")
+
+    # Summary table
+    lines.append("## 📊 Summary Table\n")
+    lines.append("| # | Viral Score | Start | End | Headline |")
+    lines.append("|---|-------------|-------|-----|----------|")
+    for reel in reels:
+        num   = reel.get("segment_number", "?")
+        score = reel.get("viral_score", "?")
+        start = reel["timestamps"]["start"]
+        end   = reel["timestamps"]["end"]
+        title = reel.get("viral_headline", "N/A")
+        lines.append(f"| {num} | {score}/10 | {start:.0f}s | {end:.0f}s | {title} |")
+
+    lines.append("\n---\n")
+
+    # Individual reel sections
+    for reel in reels:
+        num   = reel.get("segment_number", "?")
+        start = reel["timestamps"]["start"]
+        end   = reel["timestamps"]["end"]
+        dur   = end - start
+
+        lines.append(f"## Reel {num} — {reel.get('viral_headline', 'N/A')}")
+        lines.append("")
+        lines.append(f"**File:** `output/clips/reel_{num}.mp4`  ")
+        lines.append(f"**Timestamp:** {start:.0f}s – {end:.0f}s ({dur:.0f}s duration)  ")
+        lines.append(f"**Viral Score:** {reel.get('viral_score', '?')}/10  ")
+        lines.append(f"**Why it works:** {reel.get('why_viral', 'N/A')}  ")
+        lines.append(f"**Target audience:** {reel.get('target_audience', 'N/A')}")
+        lines.append("")
+
+        lines.append("### 🎯 Hook Line")
+        lines.append(f"> {reel.get('hook_line', 'N/A')}")
+        lines.append("")
+
+        lines.append("### 📝 Text Overlay (Show at start of clip)")
+        lines.append(f"```\n{reel.get('text_overlay', 'N/A')}\n```")
+        lines.append("")
+
+        lines.append("### 📱 Instagram Caption")
+        lines.append(f"{reel.get('instagram_caption', 'N/A')}")
+        lines.append("")
+
+        lines.append("### 🎵 TikTok Caption")
+        lines.append(f"{reel.get('tiktok_caption', 'N/A')}")
+        lines.append("")
+
+        lines.append("### ▶️ YouTube Shorts Title")
+        lines.append(f"`{reel.get('youtube_title', 'N/A')}`")
+        lines.append("")
+
+        lines.append("### 🎞️ B-Roll Shot List")
+        shots = reel.get("broll_shots", [])
+        for i, shot in enumerate(shots, start=1):
+            lines.append(f"**Shot {i}:** `output/broll/reel_{num}_shot_{i}.png`")
+            lines.append(f"- Prompt: {shot}")
+            lines.append("")
+
+        lines.append("### 🖼️ Thumbnail Idea")
+        lines.append(f"{reel.get('thumbnail_idea', 'N/A')}")
+        lines.append("")
+
+        lines.append("### 📅 Best Post Time")
+        lines.append(f"{reel.get('best_post_time', 'N/A')}")
+        lines.append("")
+
+        lines.append("---\n")
+
+    # Footer
+    lines.append("## 📁 Output Folder Structure\n")
+    lines.append("```")
+    lines.append("output/")
+    lines.append("├── transcript.txt          ← Full video transcript")
+    lines.append("├── segments.json           ← Timestamped transcript segments")
+    lines.append("├── viral_segments.json     ← 5 viral moments identified by AI")
+    lines.append("├── reels_content.json      ← All captions, headlines, B-roll")
+    lines.append("├── clips/")
+    lines.append("│   ├── reel_1.mp4")
+    lines.append("│   ├── reel_2.mp4")
+    lines.append("│   ├── reel_3.mp4")
+    lines.append("│   ├── reel_4.mp4")
+    lines.append("│   └── reel_5.mp4")
+    lines.append("├── broll/")
+    lines.append("│   ├── reel_1_shot_1.png")
+    lines.append("│   ├── reel_1_shot_2.png")
+    lines.append("│   └── ... (15 images total)")
+    lines.append("└── reports/")
+    lines.append("    └── reels_report.md     ← This file")
+    lines.append("```\n")
+    lines.append("*Generated by Multimodal Content Engine — Free Stack*")
+
+    return "\n".join(lines)
+
+
+def main():
+    reels = load_reels_content()
+    os.makedirs("output/reports", exist_ok=True)
+
+    report = build_report(reels)
+
+    report_path = "output/reports/reels_report.md"
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write(report)
+
+    # Count output files
+    clips  = len([f for f in os.listdir("output/clips")  if f.endswith(".mp4")])  if os.path.exists("output/clips")  else 0
+    brolls = len([f for f in os.listdir("output/broll")  if f.endswith(".png")])  if os.path.exists("output/broll")  else 0
+
+    print(f"[DONE]  Report saved → {report_path}")
+    print(f"\n{'='*50}")
+    print(f"  PIPELINE COMPLETE!")
+    print(f"{'='*50}")
+    print(f"  Video clips  : {clips}/5  (output/clips/)")
+    print(f"  B-roll shots : {brolls}/15 (output/broll/)")
+    print(f"  Report       : output/reports/reels_report.md")
+    print(f"{'='*50}")
+    print(f"[✓] All steps done. Check the output/ folder!")
+
+
+if __name__ == "__main__":
+    main()
